@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import Swal from "sweetalert2";
+import { supabase } from "@/src/utils/supabase/client";
 
 const BACKEND_URL = "https://zen-tech-ai-ztiw.hf.space";
-
 type Message = {
   id: string;
   text: string;
@@ -20,6 +20,7 @@ type Chat = {
 };
 
 export default function ZenTechOS() {
+  
   const [userName, setUserName] = useState<string>("Commander");
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
@@ -31,7 +32,7 @@ export default function ZenTechOS() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const chatBoxRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
+ 
   const parseMarkdown = (text: string) => {
     const imageRegex = /!\[([^\]]*)\]\((.*?)\)/g;
     let html = text.replace(
@@ -83,6 +84,9 @@ export default function ZenTechOS() {
     }
   }, [chatHistory, currentChatId]);
 
+
+
+ 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -92,114 +96,253 @@ export default function ZenTechOS() {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     if (window.innerWidth < 768 && sidebarOpen) setSidebarOpen(false);
   };
-
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputText(e.target.value);
     e.target.style.height = "auto";
     e.target.style.height = e.target.scrollHeight + "px";
   };
-
   const generateSmartTitle = (text: string) => {
-    const title = text.trim().charAt(0).toUpperCase() + text.trim().slice(1);
-    return title.length > 25 ? title.substring(0, 25) + "..." : title;
+  const title =
+    text.trim().charAt(0).toUpperCase() +
+    text.trim().slice(1);
+
+  return title.length > 25
+    ? title.substring(0, 25) + "..."
+    : title;
+};
+const sendMessage = async () => {
+  if (!inputText.trim() || isProcessing) return;
+
+  const currentText = inputText.trim();
+
+  setInputText("");
+  if (textareaRef.current) {
+    textareaRef.current.style.height = "auto";
+  }
+
+  setIsProcessing(true);
+
+  let activeChatId = currentChatId;
+  let updatedHistory = [...chatHistory];
+
+  // Create new chat
+  if (!activeChatId) {
+    activeChatId = Date.now();
+
+    updatedHistory.push({
+      id: activeChatId,
+      title: generateSmartTitle(currentText),
+      messages: [],
+    });
+  }
+
+  const chatIndex = updatedHistory.findIndex(
+    (c) => c.id === activeChatId
+  );
+
+  // User message
+  const userMsg: Message = {
+    id: Date.now().toString(),
+    text: currentText,
+    isUser: true,
   };
 
-  const sendMessage = async () => {
-    if (!inputText.trim() || isProcessing) return;
-    const currentText = inputText.trim();
-    setInputText("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-    setIsProcessing(true);
-    let activeChatId = currentChatId;
-    let updatedHistory = [...chatHistory];
-    if (!activeChatId) {
-      activeChatId = Date.now();
-      updatedHistory.push({
-        id: activeChatId,
-        title: generateSmartTitle(currentText),
-        messages: [],
-      });
+  updatedHistory[chatIndex].messages.push(userMsg);
+
+  setChatHistory([...updatedHistory]);
+  setCurrentChatId(activeChatId);
+
+  // Backend mode
+  let backendMode = "Gemini 2.5 Flash";
+  let payloadMessage = currentText;
+
+  // Loading message
+  if (currentMode === "3ena") {
+    backendMode = "Zimage Generation";
+
+    updatedHistory[chatIndex].messages.push({
+      id: "loading-" + Date.now(),
+      text: "",
+      isUser: false,
+      isImageRender: true,
+      isTyping: true,
+    });
+  } else if (currentMode === "1ris") {
+    payloadMessage = `As an elite Prompt Engineering AI named 1ris, rewrite this idea into a highly detailed, optimized prompt format ready for an LLM. Return ONLY the enhanced prompt. Idea: "${currentText}"`;
+
+    updatedHistory[chatIndex].messages.push({
+      id: "loading-" + Date.now(),
+      text: "Processing...",
+      isUser: false,
+      isTyping: true,
+    });
+  } else {
+    updatedHistory[chatIndex].messages.push({
+      id: "loading-" + Date.now(),
+      text: "Processing...",
+      isUser: false,
+      isTyping: true,
+    });
+  }
+
+  setChatHistory([...updatedHistory]);
+
+  try {
+    // ==============================
+    // BACKEND REQUEST
+    // ==============================
+
+    const response = await fetch(`${BACKEND_URL}/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: payloadMessage,
+        mode: backendMode,
+      }),
+    });
+
+    const data = await response.json();
+
+    // ==============================
+    // GET CURRENT USER
+    // ==============================
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.error("USER ERROR:", userError);
     }
-    const chatIndex = updatedHistory.findIndex((c) => c.id === activeChatId);
-    const userMsg: Message = { id: Date.now().toString(), text: currentText, isUser: true };
-    updatedHistory[chatIndex].messages.push(userMsg);
-    setChatHistory([...updatedHistory]);
-    setCurrentChatId(activeChatId);
-    let backendMode = "Gemini 2.5 Flash";
-    let payloadMessage = currentText;
-    if (currentMode === "3ena") {
-      backendMode = "Zimage Generation";
-      updatedHistory[chatIndex].messages.push({
-        id: "loading-" + Date.now(),
-        text: "",
-        isUser: false,
-        isImageRender: true,
-        isTyping: true
-      });
-      setChatHistory([...updatedHistory]);
-    } else if (currentMode === "1ris") {
-      payloadMessage = `As an elite Prompt Engineering AI named 1ris, rewrite this idea into a highly detailed, optimized prompt format ready for an LLM. Return ONLY the enhanced prompt. Idea: "${currentText}"`;
-      updatedHistory[chatIndex].messages.push({
-        id: "loading-" + Date.now(),
-        text: "Processing...",
-        isUser: false,
-        isTyping: true
-      });
-      setChatHistory([...updatedHistory]);
-    } else {
-      updatedHistory[chatIndex].messages.push({
-        id: "loading-" + Date.now(),
-        text: "Processing...",
-        isUser: false,
-        isTyping: true
-      });
-      setChatHistory([...updatedHistory]);
-    }
-    try {
-      const response = await fetch(`${BACKEND_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: payloadMessage, mode: backendMode }),
-      });
-      const data = await response.json();
-      updatedHistory[chatIndex].messages.pop();
-      if (response.ok) {
-        if (currentMode === "3ena") {
-          const match = data.response.match(/!\[.*?\]\((.*?)\)/);
-          const imgUrl = match ? match[1] : null;
-          updatedHistory[chatIndex].messages.push({
-            id: Date.now().toString(),
-            text: data.response,
-            isUser: false,
-            isImageRender: true,
-            imageUrl: imgUrl
+
+    // Remove loading message
+    updatedHistory[chatIndex].messages.pop();
+
+    // ==============================
+    // BACKEND SUCCESS
+    // ==============================
+
+    if (response.ok) {
+      // ==============================
+      // SAVE CHAT HISTORY
+      // ==============================
+
+      if (user) {
+        const { error: chatError } = await supabase
+          .from("chat_history")
+          .insert({
+            user_id: user.id,
+            prompt: payloadMessage,
+            response: data.response,
           });
+
+        if (chatError) {
+          console.error(
+            "CHAT HISTORY ERROR:",
+            chatError
+          );
         } else {
-          updatedHistory[chatIndex].messages.push({
-            id: Date.now().toString(),
-            text: data.response,
-            isUser: false,
-          });
+          console.log("CHAT HISTORY SAVED ✅");
         }
-      } else {
+      }
+
+      // ==============================
+      // IMAGE GENERATION
+      // ==============================
+
+      if (currentMode === "3ena") {
+        const match = data.response?.match(
+          /!\[.*?\]\((.*?)\)/
+        );
+
+        const imgUrl = match ? match[1] : null;
+
+        // Save generated image
+        if (user && imgUrl) {
+          const { error: imageError } =
+            await supabase
+              .from("image_generation")
+              .insert({
+                user_id: user.id,
+                prompt: payloadMessage,
+                image_url: imgUrl,
+                model_name: "FLUX",
+              });
+
+          if (imageError) {
+            console.error(
+              "IMAGE GENERATION ERROR:",
+              imageError
+            );
+          } else {
+            console.log(
+              "IMAGE GENERATION SAVED ✅"
+            );
+          }
+        }
+
+        // Show image in UI
         updatedHistory[chatIndex].messages.push({
           id: Date.now().toString(),
-          text: `**Error:** ${data.detail || "System Exception"}`,
+          text: data.response,
+          isUser: false,
+          isImageRender: true,
+          imageUrl: imgUrl,
+        });
+      } else {
+        // ==============================
+        // NORMAL CHAT RESPONSE
+        // ==============================
+
+        updatedHistory[chatIndex].messages.push({
+          id: Date.now().toString(),
+          text: data.response,
           isUser: false,
         });
       }
-    } catch (err) {
-      updatedHistory[chatIndex].messages.pop();
+    } else {
+      // ==============================
+      // BACKEND ERROR
+      // ==============================
+
       updatedHistory[chatIndex].messages.push({
         id: Date.now().toString(),
-        text: "**Connection Failure:** Unable to reach Zen-Tech server.",
+        text: `**Error:** ${
+          data.detail || "System Exception"
+        }`,
         isUser: false,
       });
     }
-    setChatHistory([...updatedHistory]);
-    setIsProcessing(false);
-    if (textareaRef.current) textareaRef.current.focus();
-  };
+  } catch (err) {
+    // ==============================
+    // CONNECTION ERROR
+    // ==============================
+
+    console.error("CONNECTION ERROR:", err);
+
+    updatedHistory[chatIndex].messages.pop();
+
+    updatedHistory[chatIndex].messages.push({
+      id: Date.now().toString(),
+      text: "**Connection Failure:** Unable to reach Zen-Tech server.",
+      isUser: false,
+    });
+  }
+
+  // ==============================
+  // UPDATE UI
+  // ==============================
+
+  setChatHistory([...updatedHistory]);
+  setIsProcessing(false);
+
+  if (textareaRef.current) {
+    textareaRef.current.focus();
+  }
+};
 
   const activeChat = chatHistory.find((c) => c.id === currentChatId);
   const hour = new Date().getHours();

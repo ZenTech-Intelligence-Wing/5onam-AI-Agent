@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/src/utils/supabase/client";
 
 const BACKEND_URL = "https://zen-tech-ai-ztiw.hf.space";
 
@@ -19,7 +21,34 @@ type Chat = {
   messages: Message[];
 };
 
+
+
+
+
 export default function ZenTechOS() {
+
+  const router = useRouter();
+ 
+
+  useEffect(() => {
+    async function checkAuth() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.replace("/login");
+      }
+    }
+
+    checkAuth();
+  }, []);
+
+  
+
+
+
+
   const [userName, setUserName] = useState<string>("Commander");
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);

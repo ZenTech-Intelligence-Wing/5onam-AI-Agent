@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { supabase } from "@/src/utils/supabase/client";
 
 import logo from "../imgg/5onamAi-logo.png";
 import robot from "../imgg/robotimg.png";
@@ -13,7 +14,77 @@ import { FaApple, FaFacebookF } from "react-icons/fa";
 
 export default function SignupPage() {
   const [accepted, setAccepted] = useState(false);
+
+  const [email ,setEmail] = useState("");
+  
+  const [password , setPassword] = useState("");
+
+  const[confirmPassword, setconfirmPassword] = useState("");
   const router = useRouter();  
+  const[fullName , setfullName]= useState("")
+
+  const handleSignup = async () => {
+  if (password !== confirmPassword) {
+    alert("Passwords do not match");
+    return;
+  }
+
+  
+ const { data, error } = await supabase.auth.signUp({
+  email,
+  password,
+  options: {
+    data: {
+      full_name: fullName,
+    },
+  },
+});
+
+if (error) {
+  alert(error.message);
+  return;
+}
+
+const { error: profileError } = await supabase
+  .from("Profiles")
+  .insert([
+    {
+      id: data.user!.id,
+      full_name: fullName,
+      email: email,
+    },
+  ]);
+
+if (profileError) {
+  console.log(profileError);
+  alert(profileError.message);
+  return;
+}
+  alert("Account created successfully!");
+
+  router.push("/login");
+};
+
+const handleGoogleLogin = async () => {
+  await supabase.auth.signInWithOAuth({
+    provider: "google",
+  });
+};
+
+const handleAppleLogin = async () => {
+  await supabase.auth.signInWithOAuth({
+    provider: "apple",
+  });
+};
+
+const handleFacebookLogin = async () => {
+  await supabase.auth.signInWithOAuth({
+    provider: "facebook",
+  });
+};
+
+
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#b06e57] via-[#a56c71] to-[#8a5c6f] flex items-center justify-center p-4">
       <div className="w-full max-w-7xl bg-white rounded-[30px] overflow-hidden shadow-2xl grid grid-cols-1 lg:grid-cols-2">
@@ -67,6 +138,8 @@ export default function SignupPage() {
             {/* Name */}
             <input
               type="text"
+              value={fullName}
+              onChange={(e) => setfullName(e.target.value)}
               placeholder="Full Name"
               className="w-full h-14 rounded-xl border bg-gray-100 px-5 mb-4 outline-none"
             />
@@ -74,6 +147,8 @@ export default function SignupPage() {
             {/* Email */}
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Email Address"
               className="w-full h-14 rounded-xl border bg-gray-100 px-5 mb-4 outline-none"
             />
@@ -82,6 +157,8 @@ export default function SignupPage() {
             <div className="relative mb-4">
               <input
                 type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 className="w-full h-14 rounded-xl border bg-gray-100 px-5 outline-none"
               />
@@ -96,6 +173,8 @@ export default function SignupPage() {
             <div className="relative">
               <input
                 type="password"
+                value={confirmPassword}
+                onChange={(e) => setconfirmPassword(e.target.value)}
                 placeholder="Confirm Password"
                 className="w-full h-14 rounded-xl border bg-gray-100 px-5 outline-none"
               />
@@ -136,7 +215,7 @@ export default function SignupPage() {
             </div>
 
             {/* Button */}
-            <button onClick={() => router.push("/mainpage")}
+            <button onClick={handleSignup}
               disabled={!accepted}
               className={`w-full h-14 rounded-xl text-white font-semibold mt-8 transition ${
                 accepted
@@ -160,15 +239,15 @@ export default function SignupPage() {
 
             {/* Social Login */}
             <div className="flex justify-center gap-5">
-              <button className="w-14 h-14 rounded-xl border shadow flex items-center justify-center">
+              <button onClick={(handleGoogleLogin)} className="w-14 h-14 rounded-xl border shadow flex items-center justify-center">
                 <FcGoogle size={28} />
               </button>
 
-              <button className="w-14 h-14 rounded-xl border shadow flex items-center justify-center">
+              <button onClick={(handleAppleLogin)} className="w-14 h-14 rounded-xl border shadow flex items-center justify-center">
                 <FaApple size={28} />
               </button>
 
-              <button className="w-14 h-14 rounded-xl border shadow flex items-center justify-center">
+              <button onClick={(handleFacebookLogin)} className="w-14 h-14 rounded-xl border shadow flex items-center justify-center">
                 <FaFacebookF
                   className="text-blue-600"
                   size={24}
@@ -182,7 +261,7 @@ export default function SignupPage() {
                 href="/login"
                 className="text-[#9f6d79] font-semibold hover:underline"
               >
-                Sign In
+                Login
               </Link>
             </p>
 

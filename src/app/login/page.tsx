@@ -1,15 +1,33 @@
 "use client";
-
+import { supabase } from "@/src/utils/supabase/client";
 import Image from "next/image";
+import {useState} from "react"
 import logo from "../imgg/5onamAi-logo.png";
 import robot from "../imgg/robotimg.png";
 import { useRouter } from "next/navigation";
 import { Eye } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple, FaFacebookF } from "react-icons/fa";
-
+import Link from "next/link";
 export default function LoginPage() {
+  const [email ,setEmail] = useState("");
+  const [password , setPassword] = useState("");
   const router = useRouter();
+  const handleLogin = async () => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  router.push("/mainpage");
+};
+ 
+  
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-r from-purple-900 via-pink-900 to-indigo-900 animate-bg flex items-center justify-center p-4">
 
@@ -49,23 +67,25 @@ export default function LoginPage() {
               <Image
                 src={logo}
                 alt="Sonam AI"
-                width={280}
-                height={80}
+                width={380}
+                height={90}
                 priority
-                 className=" hover:scale-205 transition-all duration-30"
+                 className=" mx-auto mb-2   hover:scale-105 transition-all duration-30"
               />
             </div>
 
-            <h1 className="text-5xl font-bold text-center text-black">
+            <h1 className="text-5xl lg:text-6x1 font -extraibold tracking-tight text-center text-slate-900">
               Welcome Back
             </h1>
 
-            <p className="text-center text-black/1000 font-bold mt-3 mb-8">
+            <p className="text-center text-black-500 text-lg mt-3 mb-10">
               Sign in to continue to Sonam AI
             </p>
 
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Email Address"
               className="w-full h-14 rounded-xl bg-white/10 border border-white/800 px-5 mb-5 text-white placeholder:text-white/50 outline-none focus:ring-2 focus:ring-cyan-400 transition-all"
             />
@@ -73,6 +93,8 @@ export default function LoginPage() {
             <div className="relative">
               <input
                 type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 className="w-full h-14 rounded-xl bg-white/10 border border-white/800 px-5 mb-1 text-white placeholder:text-white/50 outline-none focus:ring-2 focus:ring-cyan-400 transition-all"               />
 
@@ -88,15 +110,28 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <button onClick={() => router.push("/signup")} className="group relative w-full h-14 mt-20 overflow-hidden rounded-xl bg-gradient-to-r from-violet-600 via-black-600 to-fuchsia-600 text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_35px_rgba(128,85,247,0.6)] active:scale-95">
+            <button onClick={handleLogin} className="group relative w-full h-14 mt-20 overflow-hidden rounded-xl bg-gradient-to-r from-violet-600 via-black-600 to-fuchsia-600 text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-[0_0_35px_rgba(128,85,247,0.6)] active:scale-95">
 
          <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-black/60 to-transparent group-hover:translate-x-full transition-transform duration-1000"></span>
 
          <span className="relative z-20  text-black/100 font-bold  ">
-             Sign In
+             Login 
          </span>
 
 </button>
+
+
+<p className="text-center mt-5 text-black font-medium">
+  Don't have an account?{" "}
+  <Link
+    href="/signup"
+    className="text-cyan-400 hover:text-cyan-300 underline"
+  >
+    Create a new account
+  </Link>
+</p>
+
+<div className="flex items-center gap-4 my-8"></div>
 
             <div className="flex items-center gap-4 my-8">
               <div className="flex-1 h-px bg-white/70"></div>
@@ -121,6 +156,7 @@ export default function LoginPage() {
             </div>
 
           </div>
+          
         </div>
 
         {/* Desktop Image */}
