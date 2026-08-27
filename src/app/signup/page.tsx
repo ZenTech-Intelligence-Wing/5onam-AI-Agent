@@ -1,299 +1,295 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { supabase } from "@/src/utils/supabase/client";
-
-import logo from "../imgg/5onamAi-logo.png";
-import robot from "../imgg/robotimg.png";
-
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Eye } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple, FaFacebookF } from "react-icons/fa";
+import { FaFacebookF } from "react-icons/fa";
+import Link from "next/link";
 
 export default function SignupPage() {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  const [email ,setEmail] = useState("");
-  
-  const [password , setPassword] = useState("");
+  // --- AUTHENTICATION LOGIC ---
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
 
-  const[confirmPassword, setconfirmPassword] = useState("");
-  const router = useRouter();  
-  const[fullName , setfullName]= useState("")
+    setIsLoading(true);
 
-  const handleSignup = async () => {
-  if (password !== confirmPassword) {
-    alert("Passwords do not match");
-    return;
-  }
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    });
 
-  
- const { data, error } = await supabase.auth.signUp({
-  email,
-  password,
-  options: {
-    data: {
-      full_name: fullName,
-    },
-  },
-});
+    if (error) {
+      alert(error.message);
+      setIsLoading(false);
+      return;
+    }
 
-if (error) {
-  alert(error.message);
-  return;
-}
+    const { error: profileError } = await supabase.from("Profiles").insert([
+      {
+        id: data.user!.id,
+        full_name: fullName,
+        email: email,
+      },
+    ]);
 
-const { error: profileError } = await supabase
-  .from("Profiles")
-  .insert([
-    {
-      id: data.user!.id,
-      full_name: fullName,
-      email: email,
-    },
-  ]);
+    if (profileError) {
+      console.log(profileError);
+      alert(profileError.message);
+      setIsLoading(false);
+      return;
+    }
 
-if (profileError) {
-  console.log(profileError);
-  alert(profileError.message);
-  return;
-}
-  alert("Account created successfully!");
+    alert("Account created successfully!");
+    router.push("/login");
+  };
 
-  router.push("/login");
-};
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/mainpage`,
+      },
+    });
+    
+    if (error) {
+      alert(error.message);
+      setIsLoading(false);
+    }
+  };
 
-const handleGoogleLogin = async () => {
-  await supabase.auth.signInWithOAuth({
-    provider: "google",
-  });
-};
+  const handleFacebookLogin = async () => {
+    setIsLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "facebook",
+      options: {
+        redirectTo: `${window.location.origin}/mainpage`,
+      },
+    });
 
-const handleAppleLogin = async () => {
-  await supabase.auth.signInWithOAuth({
-    provider: "apple",
-  });
-};
-
-const handleFacebookLogin = async () => {
-  await supabase.auth.signInWithOAuth({
-    provider: "facebook",
-  });
-};
-
-
+    if (error) {
+      alert(error.message);
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#b06e57] via-[#a56c71] to-[#8a5c6f] flex items-center justify-center p-4">
-      <div className="w-full max-w-7xl bg-white rounded-[30px] overflow-hidden shadow-2xl grid grid-cols-1 lg:grid-cols-2">
-
-        {/* Mobile Image */}
-        <div className="relative h-72 lg:hidden">
-          <Image
-            src={robot}
-            alt="Robot"
-            fill
-            priority
-            className="object-cover"
-          />
-
-          <div className="absolute inset-0 bg-black/30" />
-
-          <div className="absolute bottom-6 left-6 text-white">
-            <h2 className="text-3xl font-bold">
-              Welcome to <br /> Sonam AI
-            </h2>
-
-            <p className="mt-2 text-sm">
-              Intelligent AI Assistant
-            </p>
-          </div>
+    <main className="flex min-h-screen w-full bg-white font-sans flex-col lg:flex-row overflow-hidden">
+      
+      {/* Left Side: 70% Flexible Full-Screen Video Background */}
+      <div className="hidden lg:flex lg:w-[70%] relative min-h-screen bg-black overflow-hidden flex-col justify-end p-10 border-r border-gray-200">
+        
+        {/* Vimeo Iframe Wrapper - Perfect Cover Fit */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <iframe
+            src="https://player.vimeo.com/video/1172426268?background=1&autoplay=1&loop=1&muted=1&autopause=0"
+            className="absolute top-1/2 left-1/2 w-[100vw] h-[56.25vw] min-w-[177.77vh] min-h-screen -translate-x-1/2 -translate-y-1/2"
+            frameBorder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+          ></iframe>
         </div>
 
-        {/* Left Side */}
-        <div className="flex items-center justify-center px-8 py-10">
-          <div className="w-full max-w-md">
+        {/* Bottom Left Footer */}
+        <div className="relative z-20 text-xs font-semibold text-white/90 drop-shadow-md">
+          &copy; {new Date().getFullYear()} Zen-Tech Intelligence Wing. All rights reserved.
+        </div>
+      </div>
 
-            {/* Logo */}
-            <div className="flex justify-center mb-8">
-              <Image
-                src={logo}
-                alt="Sonam AI"
-                width={220}
-                height={80}
-                priority
-              />
-            </div>
+      {/* Right Side: 30% Flexible Form Section (Scrollable for extra fields) */}
+      <div className="w-full lg:w-[30%] lg:min-w-[420px] flex flex-col p-8 sm:p-12 bg-white relative z-10 min-h-screen overflow-y-auto">
+        
+        {/* Mobile Video Header (Hidden on Desktop) */}
+        <div className="relative h-48 w-full shrink-0 overflow-hidden lg:hidden bg-black rounded-xl shadow-inner mb-8 pointer-events-none">
+          <iframe
+            src="https://player.vimeo.com/video/1172426268?background=1&autoplay=1&loop=1&muted=1&autopause=0"
+            className="absolute top-1/2 left-1/2 w-[150vw] h-[150vh] min-w-full min-h-full -translate-x-1/2 -translate-y-1/2 object-cover"
+            frameBorder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+          ></iframe>
+        </div>
 
-            <h1 className="text-5xl font-bold text-center">
-              Create Account
-            </h1>
-
-            <p className="text-center text-gray-500 mt-3 mb-8">
-              Create your Sonam AI account
-            </p>
-
-            {/* Name */}
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setfullName(e.target.value)}
-              placeholder="Full Name"
-              className="w-full h-14 rounded-xl border bg-gray-100 px-5 mb-4 outline-none"
+        {/* Edge-to-edge flexible form area */}
+        <div className="w-full flex flex-col animate-in fade-in duration-500 my-auto">
+          
+          {/* Centered Logo */}
+          <div className="mb-8 flex justify-center">
+            <img
+              src="https://www.image2url.com/r2/default/images/1776349590881-7c3f54c2-fed1-4d1c-83f2-1c3ae1fd79a7.png"
+              alt="5onam AI Logo"
+              className="h-16 w-auto object-contain drop-shadow-md"
             />
+          </div>
 
-            {/* Email */}
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email Address"
-              className="w-full h-14 rounded-xl border bg-gray-100 px-5 mb-4 outline-none"
-            />
+          <form onSubmit={handleSignup} className="w-full">
+            <div className="space-y-4">
+              
+              {/* Full Name */}
+              <div className="w-full flex flex-col">
+                <label className="text-xs font-semibold text-gray-600 mb-1.5">
+                  Full Name
+                </label>
+                <div className="relative flex items-center w-full">
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="John Doe"
+                    required
+                    disabled={isLoading}
+                    className="w-full h-11 px-4 bg-[#EFF4F9] rounded-md text-gray-900 text-sm outline-none transition-all duration-200 focus:bg-[#E5EAF1] disabled:opacity-50 border-none focus:ring-0"
+                  />
+                </div>
+              </div>
 
-            {/* Password */}
-            <div className="relative mb-4">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full h-14 rounded-xl border bg-gray-100 px-5 outline-none"
-              />
+              {/* Email */}
+              <div className="w-full flex flex-col">
+                <label className="text-xs font-semibold text-gray-600 mb-1.5">
+                  Work Email / Username
+                </label>
+                <div className="relative flex items-center w-full">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    required
+                    disabled={isLoading}
+                    className="w-full h-11 px-4 bg-[#EFF4F9] rounded-md text-gray-900 text-sm outline-none transition-all duration-200 focus:bg-[#E5EAF1] disabled:opacity-50 border-none focus:ring-0"
+                  />
+                </div>
+              </div>
 
-              <Eye
-                size={20}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"
-              />
-            </div>
+              {/* Password */}
+              <div className="w-full flex flex-col">
+                <label className="text-xs font-semibold text-gray-600 mb-1.5">
+                  Password
+                </label>
+                <div className="relative flex items-center w-full">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled={isLoading}
+                    className="w-full h-11 px-4 pr-10 bg-[#EFF4F9] rounded-md text-gray-900 text-sm outline-none transition-all duration-200 focus:bg-[#E5EAF1] disabled:opacity-50 border-none focus:ring-0"
+                  />
+                  <Eye
+                    size={18}
+                    className="absolute right-4 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
+                  />
+                </div>
+              </div>
 
-            {/* Confirm Password */}
-            <div className="relative">
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setconfirmPassword(e.target.value)}
-                placeholder="Confirm Password"
-                className="w-full h-14 rounded-xl border bg-gray-100 px-5 outline-none"
-              />
+              {/* Confirm Password */}
+              <div className="w-full flex flex-col">
+                <label className="text-xs font-semibold text-gray-600 mb-1.5">
+                  Confirm Password
+                </label>
+                <div className="relative flex items-center w-full">
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled={isLoading}
+                    className="w-full h-11 px-4 pr-10 bg-[#EFF4F9] rounded-md text-gray-900 text-sm outline-none transition-all duration-200 focus:bg-[#E5EAF1] disabled:opacity-50 border-none focus:ring-0"
+                  />
+                  <Eye
+                    size={18}
+                    className="absolute right-4 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
+                  />
+                </div>
+              </div>
 
-              <Eye
-                size={20}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"
-              />
             </div>
 
             {/* Terms Checkbox */}
-            <div className="flex items-start gap-3 mt-5">
-              <input
-                type="checkbox"
-                id="terms"
+            <div className="flex items-start mt-5 mb-6">
+              <input 
+                type="checkbox" 
+                id="terms" 
                 checked={accepted}
                 onChange={(e) => setAccepted(e.target.checked)}
-                className="mt-1"
+                className="w-3.5 h-3.5 mt-0.5 rounded border-gray-300 text-blue-500 focus:ring-blue-500 cursor-pointer shrink-0"
               />
-
-              <label htmlFor="terms" className="text-sm text-gray-600">
+              <label htmlFor="terms" className="ml-2 text-[11px] text-gray-600 cursor-pointer font-medium leading-relaxed">
                 I agree to the{" "}
-                <Link
-                  href="/terms"
-                  className="text-[#9f6d79] font-medium hover:underline"
-                >
+                <Link href="/terms" className="text-[#2585EB] hover:underline underline-offset-2">
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link
-                  href="/privacy"
-                  className="text-[#9f6d79] font-medium hover:underline"
-                >
+                <Link href="/privacy" className="text-[#2585EB] hover:underline underline-offset-2">
                   Privacy Policy
-                </Link>
-                .
+                </Link>.
               </label>
             </div>
 
-            {/* Button */}
-            <button onClick={handleSignup}
-              disabled={!accepted}
-              className={`w-full h-14 rounded-xl text-white font-semibold mt-8 transition ${
-                accepted
-                  ? "bg-[#9f6d79] hover:bg-[#8d5b69]"
-                  : "bg-gray-400 cursor-not-allowed"
+            {/* Action Button */}
+            <button
+              type="submit"
+              disabled={!accepted || isLoading}
+              className={`w-full h-11 rounded-md text-white font-medium text-sm transition-colors duration-200 shadow-sm ${
+                !accepted || isLoading 
+                  ? "bg-gray-400 cursor-not-allowed" 
+                  : "bg-[#2585EB] hover:bg-[#1E74D4] active:scale-[0.99]"
               }`}
             >
-              Create Account
+              {isLoading ? "Creating Account..." : "Create Account"}
             </button>
+          </form>
 
-            {/* Divider */}
-            <div className="flex items-center gap-4 my-8">
-              <div className="flex-1 h-px bg-gray-300"></div>
-
-              <span className="text-sm text-gray-500">
-                Or continue with
-              </span>
-
-              <div className="flex-1 h-px bg-gray-300"></div>
-            </div>
-
-            {/* Social Login */}
-            <div className="flex justify-center gap-5">
-              <button onClick={(handleGoogleLogin)} className="w-14 h-14 rounded-xl border shadow flex items-center justify-center">
-                <FcGoogle size={28} />
-              </button>
-
-              <button onClick={(handleAppleLogin)} className="w-14 h-14 rounded-xl border shadow flex items-center justify-center">
-                <FaApple size={28} />
-              </button>
-
-              <button onClick={(handleFacebookLogin)} className="w-14 h-14 rounded-xl border shadow flex items-center justify-center">
-                <FaFacebookF
-                  className="text-blue-600"
-                  size={24}
-                />
-              </button>
-            </div>
-
-            <p className="text-center text-sm mt-6">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="text-[#9f6d79] font-semibold hover:underline"
-              >
-                Login
-              </Link>
-            </p>
-
+          {/* Social Auth Stack */}
+          <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col gap-3 w-full">
+            <button 
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="w-full h-11 rounded-md bg-white border border-gray-200 text-gray-600 flex items-center justify-center gap-3 text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+            >
+              <FcGoogle size={18} />
+              Sign up with Google
+            </button>
+            
+            <button 
+              onClick={handleFacebookLogin}
+              disabled={isLoading}
+              className="w-full h-11 rounded-md bg-white border border-gray-200 text-gray-600 flex items-center justify-center gap-3 text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+            >
+              <FaFacebookF size={16} className="text-[#1877F2]" />
+              Sign up with Facebook
+            </button>
           </div>
-        </div>
 
-        {/* Desktop Image */}
-        <div className="relative hidden lg:block">
-          <Image
-            src={robot}
-            alt="Robot"
-            fill
-            priority
-            className="object-cover"
-          />
-
-          <div className="absolute inset-0 bg-black/40" />
-
-          <div className="absolute bottom-10 left-10 text-white">
-            <h2 className="text-5xl font-bold">
-              Welcome to
-              <br />
-              Sonam AI
-            </h2>
-
-            <p className="mt-4 text-lg">
-              Intelligent AI Assistant
-            </p>
+          {/* Login Link */}
+          <div className="mt-6 text-center text-sm text-gray-600 font-medium">
+            Already have an account?{" "}
+            <Link href="/login" className="text-[#2585EB] hover:underline underline-offset-2">
+              Login
+            </Link>
           </div>
-        </div>
 
+        </div>
       </div>
+      
     </main>
   );
 }
