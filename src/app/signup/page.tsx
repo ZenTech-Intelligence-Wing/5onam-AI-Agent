@@ -33,6 +33,8 @@ export default function SignupPage() {
         data: {
           full_name: fullName,
         },
+        // UPDATED: Added this to handle email verification redirects
+        emailRedirectTo: `${window.location.origin}/chat`,
       },
     });
 
@@ -42,23 +44,8 @@ export default function SignupPage() {
       return;
     }
 
-    const { error: profileError } = await supabase.from("Profiles").insert([
-      {
-        id: data.user!.id,
-        full_name: fullName,
-        email: email,
-      },
-    ]);
-
-    if (profileError) {
-      console.log(profileError);
-      alert(profileError.message);
-      setIsLoading(false);
-      return;
-    }
-
-    alert("Account created successfully!");
-    router.push("/login");
+    // UPDATED: Now goes directly to chat instead of login
+    router.push("/chat");
   };
 
   const handleGoogleLogin = async () => {
@@ -66,10 +53,10 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/mainpage`,
+        redirectTo: `${window.location.origin}/chat`,
       },
     });
-    
+
     if (error) {
       alert(error.message);
       setIsLoading(false);
@@ -81,7 +68,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "facebook",
       options: {
-        redirectTo: `${window.location.origin}/mainpage`,
+        redirectTo: `${window.location.origin}/chat`,
       },
     });
 
@@ -93,11 +80,7 @@ export default function SignupPage() {
 
   return (
     <main className="flex min-h-screen w-full bg-white font-sans flex-col lg:flex-row overflow-hidden">
-      
-      {/* Left Side: 70% Flexible Full-Screen Video Background */}
       <div className="hidden lg:flex lg:w-[70%] relative min-h-screen bg-black overflow-hidden flex-col justify-end p-10 border-r border-gray-200">
-        
-        {/* Vimeo Iframe Wrapper - Perfect Cover Fit */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
           <iframe
             src="https://player.vimeo.com/video/1172426268?background=1&autoplay=1&loop=1&muted=1&autopause=0"
@@ -107,16 +90,13 @@ export default function SignupPage() {
           ></iframe>
         </div>
 
-        {/* Bottom Left Footer */}
         <div className="relative z-20 text-xs font-semibold text-white/90 drop-shadow-md">
-          &copy; {new Date().getFullYear()} Zen-Tech Intelligence Wing. All rights reserved.
+          &copy; {new Date().getFullYear()} Zen-Tech Intelligence Wing. All
+          rights reserved.
         </div>
       </div>
 
-      {/* Right Side: 30% Flexible Form Section (Scrollable for extra fields) */}
       <div className="w-full lg:w-[30%] lg:min-w-[420px] flex flex-col p-8 sm:p-12 bg-white relative z-10 min-h-screen overflow-y-auto">
-        
-        {/* Mobile Video Header (Hidden on Desktop) */}
         <div className="relative h-48 w-full shrink-0 overflow-hidden lg:hidden bg-black rounded-xl shadow-inner mb-8 pointer-events-none">
           <iframe
             src="https://player.vimeo.com/video/1172426268?background=1&autoplay=1&loop=1&muted=1&autopause=0"
@@ -126,10 +106,7 @@ export default function SignupPage() {
           ></iframe>
         </div>
 
-        {/* Edge-to-edge flexible form area */}
         <div className="w-full flex flex-col animate-in fade-in duration-500 my-auto">
-          
-          {/* Centered Logo */}
           <div className="mb-8 flex justify-center">
             <img
               src="https://www.image2url.com/r2/default/images/1776349590881-7c3f54c2-fed1-4d1c-83f2-1c3ae1fd79a7.png"
@@ -140,8 +117,6 @@ export default function SignupPage() {
 
           <form onSubmit={handleSignup} className="w-full">
             <div className="space-y-4">
-              
-              {/* Full Name */}
               <div className="w-full flex flex-col">
                 <label className="text-xs font-semibold text-gray-600 mb-1.5">
                   Full Name
@@ -159,7 +134,6 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {/* Email */}
               <div className="w-full flex flex-col">
                 <label className="text-xs font-semibold text-gray-600 mb-1.5">
                   Work Email / Username
@@ -177,7 +151,6 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {/* Password */}
               <div className="w-full flex flex-col">
                 <label className="text-xs font-semibold text-gray-600 mb-1.5">
                   Password
@@ -199,7 +172,6 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {/* Confirm Password */}
               <div className="w-full flex flex-col">
                 <label className="text-xs font-semibold text-gray-600 mb-1.5">
                   Confirm Password
@@ -220,37 +192,44 @@ export default function SignupPage() {
                   />
                 </div>
               </div>
-
             </div>
 
-            {/* Terms Checkbox */}
             <div className="flex items-start mt-5 mb-6">
-              <input 
-                type="checkbox" 
-                id="terms" 
+              <input
+                type="checkbox"
+                id="terms"
                 checked={accepted}
                 onChange={(e) => setAccepted(e.target.checked)}
                 className="w-3.5 h-3.5 mt-0.5 rounded border-gray-300 text-blue-500 focus:ring-blue-500 cursor-pointer shrink-0"
               />
-              <label htmlFor="terms" className="ml-2 text-[11px] text-gray-600 cursor-pointer font-medium leading-relaxed">
+              <label
+                htmlFor="terms"
+                className="ml-2 text-[11px] text-gray-600 cursor-pointer font-medium leading-relaxed"
+              >
                 I agree to the{" "}
-                <Link href="/terms" className="text-[#2585EB] hover:underline underline-offset-2">
+                <Link
+                  href="/terms"
+                  className="text-[#2585EB] hover:underline underline-offset-2"
+                >
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="text-[#2585EB] hover:underline underline-offset-2">
+                <Link
+                  href="/privacy"
+                  className="text-[#2585EB] hover:underline underline-offset-2"
+                >
                   Privacy Policy
-                </Link>.
+                </Link>
+                .
               </label>
             </div>
 
-            {/* Action Button */}
             <button
               type="submit"
               disabled={!accepted || isLoading}
               className={`w-full h-11 rounded-md text-white font-medium text-sm transition-colors duration-200 shadow-sm ${
-                !accepted || isLoading 
-                  ? "bg-gray-400 cursor-not-allowed" 
+                !accepted || isLoading
+                  ? "bg-gray-400 cursor-not-allowed"
                   : "bg-[#2585EB] hover:bg-[#1E74D4] active:scale-[0.99]"
               }`}
             >
@@ -258,38 +237,36 @@ export default function SignupPage() {
             </button>
           </form>
 
-          {/* Social Auth Stack */}
           <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col gap-3 w-full">
-            <button 
+            <button
               onClick={handleGoogleLogin}
               disabled={isLoading}
               className="w-full h-11 rounded-md bg-white border border-gray-200 text-gray-600 flex items-center justify-center gap-3 text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
             >
-              <FcGoogle size={18} />
-              Sign up with Google
+              <FcGoogle size={18} /> Sign up with Google
             </button>
-            
-            <button 
+
+            <button
               onClick={handleFacebookLogin}
               disabled={isLoading}
               className="w-full h-11 rounded-md bg-white border border-gray-200 text-gray-600 flex items-center justify-center gap-3 text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
             >
-              <FaFacebookF size={16} className="text-[#1877F2]" />
-              Sign up with Facebook
+              <FaFacebookF size={16} className="text-[#1877F2]" /> Sign up with
+              Facebook
             </button>
           </div>
 
-          {/* Login Link */}
           <div className="mt-6 text-center text-sm text-gray-600 font-medium">
             Already have an account?{" "}
-            <Link href="/login" className="text-[#2585EB] hover:underline underline-offset-2">
+            <Link
+              href="/login"
+              className="text-[#2585EB] hover:underline underline-offset-2"
+            >
               Login
             </Link>
           </div>
-
         </div>
       </div>
-      
     </main>
   );
 }

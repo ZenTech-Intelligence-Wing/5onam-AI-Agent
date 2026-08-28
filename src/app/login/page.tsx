@@ -28,7 +28,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/mainpage");
+    // UPDATED: Now goes directly to chat
+    router.push("/chat");
   };
 
   const handleGoogleLogin = async () => {
@@ -36,10 +37,10 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/mainpage`,
+        redirectTo: `${window.location.origin}/chat`,
       },
     });
-    
+
     if (error) {
       alert(error.message);
       setIsLoading(false);
@@ -51,7 +52,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "facebook",
       options: {
-        redirectTo: `${window.location.origin}/mainpage`,
+        redirectTo: `${window.location.origin}/chat`,
       },
     });
 
@@ -63,11 +64,8 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen w-full bg-white font-sans flex-col lg:flex-row overflow-hidden">
-      
       {/* Left Side: 70% Flexible Full-Screen Video Background */}
       <div className="hidden lg:flex lg:w-[70%] relative min-h-screen bg-black overflow-hidden flex-col justify-end p-10 border-r border-gray-200">
-        
-        {/* Vimeo Iframe Wrapper - Perfect Cover Fit */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
           <iframe
             src="https://player.vimeo.com/video/1172426268?background=1&autoplay=1&loop=1&muted=1&autopause=0"
@@ -77,16 +75,14 @@ export default function LoginPage() {
           ></iframe>
         </div>
 
-        {/* Bottom Left Footer */}
         <div className="relative z-20 text-xs font-semibold text-white/90 drop-shadow-md">
-          &copy; {new Date().getFullYear()} Zen-Tech Intelligence Wing. All rights reserved.
+          &copy; {new Date().getFullYear()} Zen-Tech Intelligence Wing. All
+          rights reserved.
         </div>
       </div>
 
       {/* Right Side: 30% Flexible Form Section */}
       <div className="w-full lg:w-[30%] lg:min-w-[420px] flex flex-col justify-center p-8 sm:p-12 bg-white relative z-10 min-h-screen">
-        
-        {/* Mobile Video Header (Hidden on Desktop) */}
         <div className="relative h-48 w-full overflow-hidden lg:hidden bg-black rounded-xl shadow-inner mb-8 pointer-events-none">
           <iframe
             src="https://player.vimeo.com/video/1172426268?background=1&autoplay=1&loop=1&muted=1&autopause=0"
@@ -96,10 +92,7 @@ export default function LoginPage() {
           ></iframe>
         </div>
 
-        {/* Edge-to-edge flexible form area */}
         <div className="w-full flex flex-col animate-in fade-in duration-500">
-          
-          {/* Centered Logo */}
           <div className="mb-10 flex justify-center">
             <img
               src="https://www.image2url.com/r2/default/images/1776349590881-7c3f54c2-fed1-4d1c-83f2-1c3ae1fd79a7.png"
@@ -110,7 +103,6 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="w-full">
             <div className="space-y-5">
-              
               <div className="w-full flex flex-col">
                 <label className="text-xs font-semibold text-gray-600 mb-2">
                   Work Email / Username
@@ -150,19 +142,20 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember Me Toggle */}
             <div className="flex items-center mt-4 mb-8">
-              <input 
-                type="checkbox" 
-                id="remember" 
+              <input
+                type="checkbox"
+                id="remember"
                 className="w-3.5 h-3.5 rounded border-gray-300 text-blue-500 focus:ring-blue-500 cursor-pointer"
               />
-              <label htmlFor="remember" className="ml-2 text-xs text-gray-600 cursor-pointer select-none font-medium">
+              <label
+                htmlFor="remember"
+                className="ml-2 text-xs text-gray-600 cursor-pointer select-none font-medium"
+              >
                 Remember me
               </label>
             </div>
 
-            {/* Action Button */}
             <button
               type="submit"
               disabled={isLoading}
@@ -172,50 +165,54 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Social Auth Stack */}
           <div className="mt-8 pt-6 flex flex-col gap-3 w-full">
-            <button 
+            <button
               onClick={handleGoogleLogin}
               disabled={isLoading}
               className="w-full h-11 rounded-md bg-white border border-gray-200 text-gray-600 flex items-center justify-center gap-3 text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
             >
-              <FcGoogle size={18} />
-              Sign in with Google
+              <FcGoogle size={18} /> Sign in with Google
             </button>
-            
-            <button 
+
+            <button
               onClick={handleFacebookLogin}
               disabled={isLoading}
               className="w-full h-11 rounded-md bg-white border border-gray-200 text-gray-600 flex items-center justify-center gap-3 text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
             >
-              <FaFacebookF size={16} className="text-[#1877F2]" />
-              Sign in with Facebook
+              <FaFacebookF size={16} className="text-[#1877F2]" /> Sign in with
+              Facebook
             </button>
           </div>
 
-          {/* Sign Up Link */}
           <div className="mt-6 text-center text-sm text-gray-600 font-medium">
             Don't have an account?{" "}
-            <Link href="/signup" className="text-[#2585EB] hover:underline underline-offset-2">
+            <Link
+              href="/signup"
+              className="text-[#2585EB] hover:underline underline-offset-2"
+            >
               Sign up
             </Link>
           </div>
 
-          {/* Terms and Privacy Policy Links */}
           <div className="mt-8 text-center text-[11px] text-gray-500 font-medium">
             By signing in, you agree to our{" "}
-            <Link href="/terms" className="text-[#2585EB] hover:underline underline-offset-2">
+            <Link
+              href="/terms"
+              className="text-[#2585EB] hover:underline underline-offset-2"
+            >
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="text-[#2585EB] hover:underline underline-offset-2">
+            <Link
+              href="/privacy"
+              className="text-[#2585EB] hover:underline underline-offset-2"
+            >
               Privacy Policy
-            </Link>.
+            </Link>
+            .
           </div>
-
         </div>
       </div>
-      
     </main>
   );
 }
