@@ -34,7 +34,7 @@ export default function SignupPage() {
           full_name: fullName,
         },
         // UPDATED: Added this to handle email verification redirects
-        emailRedirectTo: `${window.location.origin}/chat`,
+        emailredirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -53,7 +53,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/chat`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -68,7 +68,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "facebook",
       options: {
-        redirectTo: `${window.location.origin}/chat`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 

@@ -28,16 +28,17 @@ export default function LoginPage() {
       return;
     }
 
-    // UPDATED: Now goes directly to chat
+    // Force Next.js to update server components with the new cookie before redirecting
+    router.refresh();
     router.push("/chat");
   };
-
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/chat`,
+        // This is the critical line. It must go to /auth/callback
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -46,13 +47,12 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-
   const handleFacebookLogin = async () => {
     setIsLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "facebook",
       options: {
-        redirectTo: `${window.location.origin}/chat`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 

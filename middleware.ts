@@ -1,36 +1,55 @@
-// middleware.ts
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export async function middleware(request: NextRequest) {
+  // Create an unmodified response
+  let supabaseResponse = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-  // Look for the standard Supabase authentication cookie
-  const hasAuthCookie = request.cookies
-    .getAll()
-    .some(
-      (cookie) =>
-        cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token"),
-    );
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // Update the request cookies
+          request.cookies.set({ name, value, ...options });
+          // Update the response cookies
+          supabaseResponse.cookies.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.delete({ name, ...options });
+          supabaseResponse.cookies.delete({ name, ...options });
+        },
+      },
+    },
+  );
 
-  // 1. Protect the main /chat route
-  // If user goes exactly to /chat (no ID) and is NOT logged in -> redirect to login
-  if (pathname === "/chat" && !hasAuthCookie) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  // This refreshes the session if it's expired
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Protect the /chat route
+  if (!user && request.nextUrl.pathname.startsWith("/chat")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
   }
 
-  // 2. Prevent logged-in users from seeing /login or /signup again
-  if ((pathname === "/login" || pathname === "/signup") && hasAuthCookie) {
-    return NextResponse.redirect(new URL("/chat", request.url));
-  }
-
-  // 3. Shared Links like /chat/12345 are intentionally allowed to pass through
-  // so that unauthenticated users can view the shared chat!
-
-  return NextResponse.next();
+  // MUST return the modified supabaseResponse, not a new NextResponse.next()
+  return supabaseResponse;
 }
 
-// Specify which routes this middleware should run on
 export const config = {
-  matcher: ["/chat", "/chat/:path*", "/login", "/signup"],
+  matcher: [
+    // Added auth/callback to the ignore list
+    "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
