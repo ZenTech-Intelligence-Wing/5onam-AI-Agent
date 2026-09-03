@@ -58,6 +58,7 @@ export default function ZenTechOS() {
 
   // Global App State
   const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
   const [userName, setUserName] = useState<string>("Commander");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [theme, setTheme] = useState<string>("light");
@@ -109,6 +110,7 @@ export default function ZenTechOS() {
 
       if (user) {
         setUserId(user.id);
+        setUserEmail(user.email || "admin@zen-tech.com");
 
         const { data: profile } = await supabase
           .from("profiles")
@@ -457,40 +459,34 @@ export default function ZenTechOS() {
     let activeChatId = currentChatId;
     let updatedHistory = [...chatHistory];
 
-    if (!activeChatId) {
-      activeChatId = Date.now();
+    // Check if the chat actually exists in the local state
+    let chatIndex = updatedHistory.findIndex((c) => c.id === activeChatId);
+
+    // If no chat is active, OR the chat ID exists in the URL but hasn't loaded/doesn't exist
+    if (!activeChatId || chatIndex === -1) {
+      activeChatId = activeChatId || Date.now();
       window.history.pushState(null, "", `/chat/${activeChatId}`);
+
       updatedHistory.push({
         id: activeChatId,
         title: generateSmartTitle(currentText),
         messages: [],
         isPinned: false,
       });
+
+      chatIndex = updatedHistory.length - 1;
     }
 
-    const chatIndex = updatedHistory.findIndex((c) => c.id === activeChatId);
     updatedHistory[chatIndex].messages.push({
       id: Date.now().toString(),
       text: currentText,
       isUser: true,
     });
+
     setChatHistory([...updatedHistory]);
     setCurrentChatId(activeChatId);
 
     const isImagePrompt = currentText.startsWith("/image");
-    const backendMode = isImagePrompt
-      ? "Zimage Generation"
-      : currentMode === "3ena"
-        ? "Zimage Generation"
-        : "Gemini 2.5 Flash";
-
-    // Fix: Only inject knowledge context if it's NOT an image prompt.
-    // Also, strip the '/image ' prefix immediately.
-    const payloadText = isImagePrompt
-      ? currentText.replace(/^\/image\s*/i, "")
-      : knowledgeText
-        ? `System Memory/Context: [${knowledgeText}]\n\nUser Request: ${currentText}`
-        : currentText;
 
     updatedHistory[chatIndex].messages.push({
       id: "loading",
@@ -501,6 +497,66 @@ export default function ZenTechOS() {
     setChatHistory([...updatedHistory]);
 
     try {
+      // 🌟 NEW IMAGE GENERATION LOGIC 🌟
+      if (isImagePrompt) {
+        const promptStr = currentText.replace(/^\/image\s*/i, "");
+        const encodedPrompt = encodeURIComponent(promptStr);
+        const randomSeed = Math.floor(Math.random() * 100000);
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${randomSeed}`;
+
+        // Generate tracking label: userEmail_datetime
+        const now = new Date();
+        const formattedDateTime = now
+          .toISOString()
+          .split(".")[0]
+          .replace("T", "_")
+          .replace(/:/g, "-");
+        const trackingLabel = `${userEmail}_${formattedDateTime}`;
+
+        // Save URL to new ai_images table
+        if (userId) {
+          await supabase
+            .from("ai_images")
+            .insert([
+              {
+                user_id: userId,
+                prompt: promptStr,
+                image_url: imageUrl,
+                label: trackingLabel,
+              },
+            ]);
+        }
+
+        const markdownImage = `![${promptStr}](${imageUrl})`;
+
+        // Save image message to chat_history
+        await supabase.from("chat_history").insert({
+          user_id: userId,
+          chat_id: activeChatId,
+          prompt: currentText,
+          response: markdownImage,
+        });
+
+        updatedHistory[chatIndex].messages.pop(); // Remove loading
+        updatedHistory[chatIndex].messages.push({
+          id: Date.now().toString(),
+          text: markdownImage,
+          isUser: false,
+        });
+
+        setChatHistory([...updatedHistory]);
+        setIsProcessing(false);
+        if (textareaRef.current) textareaRef.current.focus();
+        return;
+      }
+
+      // --- STANDARD CHAT LOGIC ---
+      const backendMode =
+        currentMode === "3ena" ? "Zimage Generation" : "Gemini 2.5 Flash";
+      const payloadText = knowledgeText
+        ? `System Memory/Context: [${knowledgeText}]\n\nUser Request: ${currentText}`
+        : currentText;
+
       const response = await fetch(`${BACKEND_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -948,7 +1004,6 @@ export default function ZenTechOS() {
           </div>
         )}
 
-        {/* 🌟 PREMIUM KNOWLEDGE BASE VIEW 🌟 */}
         {currentView === "knowledge" && (
           <div className="flex-1 overflow-y-auto px-6 md:px-12 lg:px-32 py-10 w-full scroll-smooth">
             <div className="max-w-4xl mx-auto">
