@@ -15,8 +15,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: "5onam AI | Autonomous Intelligence Workspace",
-    template: "%s | 5onam AI",
+    default: "5onam AI Agent",
+    template: "%s | 5onam AI A",
   },
   description:
     "5onam AI is an advanced intelligent workspace agent for instant code generation, full-context reasoning, data analysis, and high-speed dynamic AI image generation.",
