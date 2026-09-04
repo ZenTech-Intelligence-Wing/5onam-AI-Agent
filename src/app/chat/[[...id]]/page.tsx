@@ -116,7 +116,7 @@ export default function ZenTechOS() {
           .from("profiles")
           .select("*")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         const finalName =
           profile?.full_name ||
@@ -140,7 +140,7 @@ export default function ZenTechOS() {
           .from("user_knowledge")
           .select("*")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
 
         if (knowledge) {
           setKnowledgeText(knowledge.context_text);
@@ -642,19 +642,14 @@ export default function ZenTechOS() {
             className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fade-in ${theme === "dark" ? "bg-gray-900 border border-gray-800" : "bg-white"}`}
           >
             <div className="p-8">
-              <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg mb-6">
-                5
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Initialize System</h2>
-              <p className="text-gray-500 text-sm mb-6">
-                Setup your profile and knowledge base so the AI agent knows
-                exactly who you are.
-              </p>
+              <h2 className="text-2xl font-bold mb-2">
+                Let our AI agent knows exactly who you are.
+              </h2>
 
               <form onSubmit={handleOnboardingSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Designation / Name
+                    Your Name{" "}
                   </label>
                   <input
                     type="text"
@@ -691,13 +686,13 @@ export default function ZenTechOS() {
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Bio / Knowledge Base
+                    Brief about you
                   </label>
                   <textarea
                     required
                     value={onboardBio}
                     onChange={(e) => setOnboardBio(e.target.value)}
-                    placeholder="I am the founder of Zen-Tech. My main interests are..."
+                    placeholder="My name is john doe, i love coding, photography and listening to music..."
                     rows={3}
                     className={`w-full rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none ${theme === "dark" ? "bg-gray-800 text-white placeholder-gray-600" : "bg-gray-100 text-gray-900"}`}
                   />
