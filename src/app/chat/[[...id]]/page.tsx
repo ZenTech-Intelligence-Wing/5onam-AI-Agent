@@ -459,10 +459,8 @@ export default function ZenTechOS() {
     let activeChatId = currentChatId;
     let updatedHistory = [...chatHistory];
 
-    // Check if the chat actually exists in the local state
     let chatIndex = updatedHistory.findIndex((c) => c.id === activeChatId);
 
-    // If no chat is active, OR the chat ID exists in the URL but hasn't loaded/doesn't exist
     if (!activeChatId || chatIndex === -1) {
       activeChatId = activeChatId || Date.now();
       window.history.pushState(null, "", `/chat/${activeChatId}`);
@@ -497,14 +495,12 @@ export default function ZenTechOS() {
     setChatHistory([...updatedHistory]);
 
     try {
-      // 🌟 NEW IMAGE GENERATION LOGIC 🌟
       if (isImagePrompt) {
         const promptStr = currentText.replace(/^\/image\s*/i, "");
         const encodedPrompt = encodeURIComponent(promptStr);
         const randomSeed = Math.floor(Math.random() * 100000);
         const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${randomSeed}`;
 
-        // Generate tracking label: userEmail_datetime
         const now = new Date();
         const formattedDateTime = now
           .toISOString()
@@ -513,23 +509,19 @@ export default function ZenTechOS() {
           .replace(/:/g, "-");
         const trackingLabel = `${userEmail}_${formattedDateTime}`;
 
-        // Save URL to new ai_images table
         if (userId) {
-          await supabase
-            .from("ai_images")
-            .insert([
-              {
-                user_id: userId,
-                prompt: promptStr,
-                image_url: imageUrl,
-                label: trackingLabel,
-              },
-            ]);
+          await supabase.from("ai_images").insert([
+            {
+              user_id: userId,
+              prompt: promptStr,
+              image_url: imageUrl,
+              label: trackingLabel,
+            },
+          ]);
         }
 
         const markdownImage = `![${promptStr}](${imageUrl})`;
 
-        // Save image message to chat_history
         await supabase.from("chat_history").insert({
           user_id: userId,
           chat_id: activeChatId,
@@ -537,7 +529,7 @@ export default function ZenTechOS() {
           response: markdownImage,
         });
 
-        updatedHistory[chatIndex].messages.pop(); // Remove loading
+        updatedHistory[chatIndex].messages.pop();
         updatedHistory[chatIndex].messages.push({
           id: Date.now().toString(),
           text: markdownImage,
@@ -557,14 +549,27 @@ export default function ZenTechOS() {
         ? `System Memory/Context: [${knowledgeText}]\n\nUser Request: ${currentText}`
         : currentText;
 
+      // GET AUTH TOKEN FOR BACKEND
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const authToken = session?.access_token || "";
+
       const response = await fetch(`${BACKEND_URL}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: payloadText, mode: backendMode }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`, // Fixed header authorization
+        },
+        body: JSON.stringify({
+          message: payloadText,
+          mode: backendMode,
+          user_id: userId,
+        }),
       });
       const data = await response.json();
 
-      updatedHistory[chatIndex].messages.pop(); // Remove loading
+      updatedHistory[chatIndex].messages.pop();
 
       if (response.ok) {
         await supabase.from("chat_history").insert({
